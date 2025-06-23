@@ -1,0 +1,5 @@
+/secrets
+/flake.lock
+/result
+*.swp
+*.backup
