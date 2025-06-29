@@ -1,5 +1,5 @@
 
-/flake.lock
+flake.lock
 /result
 *.swp
 *.backup
