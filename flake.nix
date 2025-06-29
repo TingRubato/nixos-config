@@ -112,43 +112,40 @@
           ];
         }
       );
-      nixosConfigurations =
-        # Fixed: avoid empty HOSTNAME key
-        (if hostname != "" then {
-          ${hostname} = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";  # or use builtins.currentSystem if you want full auto
-            specialArgs = inputs;
-            modules = [
-              disko.nixosModules.disko
-              home-manager.nixosModules.home-manager {
-                home-manager = {
-                  useGlobalPkgs = true;
-                  useUserPackages = true;
-                  users.${user} = import ./modules/nixos/home-manager.nix;
-                };
-              }
-              ./hosts/${hostname}
-            ];
-          };
-        } else {}) //
 
-        # Static config for vmware (always defined)
-        {
-          vmware = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            specialArgs = inputs;
-            modules = [
-              disko.nixosModules.disko
-              home-manager.nixosModules.home-manager {
-                home-manager = {
-                  useGlobalPkgs = true;
-                  useUserPackages = true;
-                  users.${user} = import ./modules/nixos/home-manager.nix;
-                };
-              }
-              ./hosts/vmware
-            ];
-          };
+      nixosConfigurations = {
+        # fallback: current hostname (if defined in ./hosts/<hostname>)
+        ${hostname} = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = inputs;
+          modules = [
+            disko.nixosModules.disko
+            home-manager.nixosModules.home-manager {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.${user} = import ./modules/nixos/home-manager.nix;
+              };
+            }
+            ./hosts/${hostname}
+          ];
+        };
+
+        # ✅ 固定的 vmware 配置
+        vmware = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = inputs;
+          modules = [
+            disko.nixosModules.disko
+            home-manager.nixosModules.home-manager {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.${user} = import ./modules/nixos/home-manager.nix;
+              };
+            }
+            ./hosts/vmware
+          ];
         };
       };
     };
