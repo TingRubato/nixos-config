@@ -1,5 +1,6 @@
 {
   description = "Starter Configuration with secrets for MacOS and NixOS";
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/25.11-pre";
     agenix.url = "github:ryantm/agenix";
@@ -32,20 +33,26 @@
       flake = false;
     };
   };
+
   outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko, agenix, secrets } @inputs:
     let
       user = "tingxu";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
       darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
+
+      # 🧠 Dynamically detect the host's name for NixOS systems
+      hostname = builtins.getEnv "HOSTNAME";
+
       devShell = system: let pkgs = nixpkgs.legacyPackages.${system}; in {
         default = with pkgs; mkShell {
           nativeBuildInputs = with pkgs; [ bashInteractive git age age-plugin-yubikey ];
-          shellHook = with pkgs; ''
+          shellHook = ''
             export EDITOR=vim
           '';
         };
       };
+
       mkApp = scriptName: system: {
         type = "app";
         program = "${(nixpkgs.legacyPackages.${system}.writeScriptBin scriptName ''
@@ -55,6 +62,7 @@
           exec ${self}/apps/${system}/${scriptName}
         '')}/bin/${scriptName}";
       };
+
       mkLinuxApps = system: {
         "apply" = mkApp "apply" system;
         "build-switch" = mkApp "build-switch" system;
@@ -64,6 +72,7 @@
         "install" = mkApp "install" system;
         "install-with-secrets" = mkApp "install-with-secrets" system;
       };
+
       mkDarwinApps = system: {
         "apply" = mkApp "apply" system;
         "build" = mkApp "build" system;
@@ -76,6 +85,7 @@
     in
     {
       devShells = forAllSystems devShell;
+
       apps = nixpkgs.lib.genAttrs linuxSystems mkLinuxApps // nixpkgs.lib.genAttrs darwinSystems mkDarwinApps;
 
       darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system:
@@ -103,20 +113,22 @@
         }
       );
 
-      nixosConfigurations = nixpkgs.lib.genAttrs linuxSystems (system: nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = inputs;
-        modules = [
-          disko.nixosModules.disko
-          home-manager.nixosModules.home-manager {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              users.${user} = import ./modules/nixos/home-manager.nix;
-            };
-          }
-          ./hosts/nixos
-        ];
-     });
-  };
+      nixosConfigurations = {
+        ${hostname} = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";  # You can add detection logic if needed
+          specialArgs = inputs;
+          modules = [
+            disko.nixosModules.disko
+            home-manager.nixosModules.home-manager {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.${user} = import ./modules/nixos/home-manager.nix;
+              };
+            }
+            ./hosts/nixos
+          ];
+        };
+      };
+    };
 }
