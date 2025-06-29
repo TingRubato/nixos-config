@@ -41,7 +41,7 @@
       darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
 
-      # 🧠 Dynamically detect the host's name for NixOS systems
+      # 🧠 Dynamically detect the host's name for NixOS systems (for fallback)
       hostname = builtins.getEnv "HOSTNAME";
 
       devShell = system: let pkgs = nixpkgs.legacyPackages.${system}; in {
@@ -114,8 +114,9 @@
       );
 
       nixosConfigurations = {
+        # fallback: current hostname (if defined in ./hosts/<hostname>)
         ${hostname} = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";  # You can add detection logic if needed
+          system = "x86_64-linux";
           specialArgs = inputs;
           modules = [
             disko.nixosModules.disko
@@ -126,7 +127,24 @@
                 users.${user} = import ./modules/nixos/home-manager.nix;
               };
             }
-            ./hosts/nixos
+            ./hosts/${hostname}
+          ];
+        };
+
+        # ✅ 固定的 vmware 配置
+        vmware = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = inputs;
+          modules = [
+            disko.nixosModules.disko
+            home-manager.nixosModules.home-manager {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                users.${user} = import ./modules/nixos/home-manager.nix;
+              };
+            }
+            ./hosts/vmware
           ];
         };
       };
