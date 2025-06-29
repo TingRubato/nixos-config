@@ -41,7 +41,7 @@
       darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
 
-      # 🧠 Dynamically detect the host's name for NixOS systems (for fallback)
+      # 🧠 Dynamically detect the host's name for NixOS systems
       hostname = builtins.getEnv "HOSTNAME";
 
       devShell = system: let pkgs = nixpkgs.legacyPackages.${system}; in {
@@ -144,7 +144,7 @@
                 users.${user} = import ./modules/nixos/home-manager.nix;
               };
             }
-            ./hosts/vmware
+            ./hosts/nixos
           ];
         };
       };
