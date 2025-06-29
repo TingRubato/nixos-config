@@ -234,6 +234,7 @@ let user = "tingxu";
   # Enable CUPS to print documents
   # services.printing.enable = true;
   # services.printing.drivers = [ pkgs.brlaser ]; # Brother printer driver
+  documentation.nixos.enable = false;
 
   # Enable sound
   # sound.enable = true;
