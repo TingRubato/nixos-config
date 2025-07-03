@@ -74,7 +74,7 @@ in
       enable = true;
       username = user;
       entries = [
-        { path = "/Applications/Slack.app/"; }
+  #      { path = "/Applications/Slack.app/"; }
         { path = "/System/Applications/Messages.app/"; }
         { path = "/System/Applications/Facetime.app/"; }
         { path = "${pkgs.alacritty}/Applications/Alacritty.app/"; }

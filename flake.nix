@@ -94,6 +94,7 @@
                   "homebrew/homebrew-cask" = homebrew-cask;
                   "homebrew/homebrew-bundle" = homebrew-bundle;
                 };
+                enableRosetta = true;
                 mutableTaps = false;
                 autoMigrate = true;
               };
