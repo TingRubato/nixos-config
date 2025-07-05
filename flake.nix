@@ -28,7 +28,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     secrets = {
-      url = "git+ssh://git@github.com/tingrubato/secrets.git";
+      url = "git@github.com:TingRubato/secrets.git";
       flake = false;
     };
   };
