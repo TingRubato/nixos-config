@@ -1,4 +1,4 @@
 [submodule "secrets"]
 	path = secrets
-	url = https://github.com/TingRubato/secrets.git
+	url = git@github.com:TingRubato/secrets.git
 	branch = main
