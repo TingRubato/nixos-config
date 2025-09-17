@@ -3,3 +3,9 @@ flake.lock
 /result
 *.swp
 *.backup
+
+.ssh/id_ed25519
+
+.ssh/id_ed25519_agenix
+
+.ssh/proxmox_key
