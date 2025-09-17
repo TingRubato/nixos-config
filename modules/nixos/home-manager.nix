@@ -1,7 +1,7 @@
 { config, pkgs, lib, ... }:
 
 let
-  user = "tingxu";
+  user = "timmy";
   xdg_configHome  = "/home/${user}/.config";
   shared-programs = import ../shared/home-manager.nix { inherit config pkgs lib; };
   shared-files = import ../shared/files.nix { inherit config pkgs; };
@@ -31,7 +31,7 @@ in
     homeDirectory = "/home/${user}";
     packages = pkgs.callPackage ./packages.nix {};
     file = shared-files // import ./files.nix { inherit user; };
-    stateVersion = "21.05";
+    stateVersion = "23.11";
   };
 
   # Use a dark theme
@@ -112,6 +112,10 @@ in
     };
   };
 
-  programs = shared-programs // { gpg.enable = true; };
+  programs = shared-programs // { 
+    gpg.enable = true;
+    direnv.enable = true;
+    home-manager.enable = true;
+  };
 
 }

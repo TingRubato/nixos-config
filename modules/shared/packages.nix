@@ -37,10 +37,11 @@ with pkgs; [
   noto-fonts-emoji
   meslo-lgs-nf
 
-  # Node.js development tools
-  nodePackages.npm # globally install npm
-  nodePackages.prettier
-  nodejs
+  # Node.js development tools - moved to Homebrew to avoid builds
+  # nodePackages.npm # globally install npm
+  # nodePackages.prettier
+  # nodejs
+  pkgs.claude-code
 
   # Text and terminal utilities
   htop
@@ -58,4 +59,11 @@ with pkgs; [
   # Python packages
   python3
   virtualenv
+
+  # Nix development and debugging tools
+  nix-index
+  nix-tree
+  nix-output-monitor
+  nix-prefetch-git
+  nix-update
 ]

@@ -1,6 +1,6 @@
 { config, inputs, pkgs, agenix, ... }:
 
-let user = "tingxu";
+let user = "timmy";
     keys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOk8iAnIaa1deoc7jw8YACPNVka1ZFJxhnU4G74TmS+p" ]; in
 {
   imports = [
@@ -15,7 +15,8 @@ let user = "tingxu";
     loader = {
       systemd-boot = {
         enable = true;
-        configurationLimit = 42;
+        configurationLimit = 10;  # Reduced from 42 for better security
+        editor = false;           # Disable editor for security
       };
       efi.canTouchEfiVariables = true;
     };
@@ -35,7 +36,12 @@ let user = "tingxu";
   networking = {
     hostName = "nixos"; # Define your hostname.
     useDHCP = false;
-    interfaces."%INTERFACE%".useDHCP = true;
+    # Use networkd for better network management
+    useNetworkd = true;
+    # Enable firewall for security
+    firewall.enable = true;
+    # Allow SSH through firewall
+    firewall.allowedTCPPorts = [ 22 ];
   };
 
   nix = {
@@ -45,6 +51,12 @@ let user = "tingxu";
       trusted-users = [ "@admin" "${user}" ];
       substituters = [ "https://nix-community.cachix.org" "https://cache.nixos.org" ];
       trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
+      # Security and performance improvements
+      sandbox = true;
+      auto-optimise-store = true;
+      max-jobs = "auto";
+      cores = 0;
+      keep-outputs = true;
     };
 
     package = pkgs.nix;
@@ -240,6 +252,9 @@ let user = "tingxu";
   # sound.enable = true;
   # hardware.pulseaudio.enable = true;
 
+  # Enable out-of-memory daemon for better memory management
+  systemd.oomd.enable = true;
+
   # Video support
   hardware = {
     graphics.enable = true;
@@ -274,18 +289,22 @@ let user = "tingxu";
     };
   };
 
-  # Don't require password for users in `wheel` group for these commands
-  security.sudo = {
-    enable = true;
-    extraRules = [{
-      commands = [
-       {
-         command = "${pkgs.systemd}/bin/reboot";
-         options = [ "NOPASSWD" ];
-        }
-      ];
-      groups = [ "wheel" ];
-    }];
+  # Security configuration
+  security = {
+    sudo = {
+      enable = true;
+      wheelNeedsPassword = true;  # Require password for sudo
+      extraRules = [{
+        commands = [
+         {
+           command = "${pkgs.systemd}/bin/reboot";
+           options = [ "NOPASSWD" ];
+          }
+        ];
+        groups = [ "wheel" ];
+      }];
+    };
+    polkit.enable = true;  # Enable polkit for privilege management
   };
 
   fonts.packages = with pkgs; [
@@ -304,5 +323,5 @@ let user = "tingxu";
     inetutils
   ];
 
-  system.stateVersion = "21.05"; # Don't change this
+  system.stateVersion = "23.11"; # Don't change this
 }

@@ -1,13 +1,13 @@
 { config, pkgs, lib, home-manager, ... }:
 
 let
-  user = "tingxu";
+  user = "timmy";
 
-  # 启动 Emacs 的脚本
-  myEmacsLauncher = pkgs.writeScript "emacs-launcher.command" ''
-    #!/bin/sh
-    emacsclient -c -n &
-  '';
+  # 启动 Emacs 的脚本 - commented out to avoid building Emacs
+  # myEmacsLauncher = pkgs.writeScript "emacs-launcher.command" ''
+  #   #!/bin/sh
+  #   emacsclient -c -n &
+  # '';
 
   # 引入共享文件
   sharedFiles = import ../shared/files.nix { inherit config pkgs; };
@@ -28,7 +28,19 @@ in
   # 配置 Homebrew 及 MAS App
   homebrew = {
     enable = true;
+    # Use the correct Homebrew path for ARM Macs
+    brewPrefix = "/opt/homebrew/bin";
     casks = pkgs.callPackage ./casks.nix {};
+    brews = [
+      "node"           # Node.js runtime
+      "npm"            # Node package manager
+      "prettier"       # Code formatter
+      "aws-cdk"        # AWS CDK
+      "terrastruct/tap/tala"
+    ];
+    taps = [
+      "terrastruct/tap"
+    ];
     masApps = {
       "wireguard" = 1451685025;
     };
@@ -42,22 +54,17 @@ in
         enableNixpkgsReleaseCheck = false;
 
         packages = with pkgs; [
-          nodejs
-          nodePackages.aws-cdk  # 安装 AWS CDK
+          # nodePackages.aws-cdk  # 安装 AWS CDK - moved to Homebrew
         ];
 
         file = lib.mkMerge [
           sharedFiles
           additionalFiles
-          { "emacs-launcher.command".source = myEmacsLauncher; }
+          # { "emacs-launcher.command".source = myEmacsLauncher; }  # Commented out
         ];
 
         stateVersion = "23.11";
       };
-
-      programs = {
-        #nodejs.enable = true;
-      } // import ../shared/home-manager.nix { inherit config pkgs lib; };
 
       manual.manpages.enable = false;
     };
@@ -77,10 +84,10 @@ in
       { path = "/System/Applications/Photo Booth.app/"; }
       { path = "/System/Applications/TV.app/"; }
       { path = "/System/Applications/Home.app/"; }
-      {
-        path = toString myEmacsLauncher;
-        section = "others";
-      }
+      # {
+      #   path = toString myEmacsLauncher;
+      #   section = "others";
+      # }
       {
         path = "${config.users.users.${user}.home}/.local/share/";
         section = "others";
