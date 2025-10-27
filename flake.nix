@@ -35,7 +35,7 @@
   };
   outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko, agenix, secrets } @inputs:
     let
-      user = "timmy";
+      user = "tingxu";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
       darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
@@ -92,6 +92,8 @@
             home-manager.darwinModules.home-manager
             nix-homebrew.darwinModules.nix-homebrew
             {
+              ids.gids.nixbld = 350;
+
               nix-homebrew = {
                 inherit user;
                 enable = true;
@@ -101,7 +103,10 @@
                   "homebrew/homebrew-bundle" = homebrew-bundle;
                 };
                 enableRosetta = true;
-                mutableTaps = false;
+                # Allow Homebrew taps to be managed mutably on-disk so the
+                # nix-darwin homebrew module can add third-party taps (e.g., terrastruct/tap)
+                # without conflicting with a read-only symlink to the Nix store.
+                mutableTaps = true;
                 autoMigrate = true;
               };
             }

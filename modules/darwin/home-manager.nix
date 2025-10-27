@@ -1,7 +1,7 @@
 { config, pkgs, lib, home-manager, ... }:
 
 let
-  user = "timmy";
+  user = "tingxu";
 
   # 启动 Emacs 的脚本 - commented out to avoid building Emacs
   # myEmacsLauncher = pkgs.writeScript "emacs-launcher.command" ''
@@ -42,7 +42,7 @@ in
       "terrastruct/tap"
     ];
     masApps = {
-      "wireguard" = 1451685025;
+      "WeChat" = 836500024;
     };
   };
 

@@ -4,11 +4,11 @@ let
   systems = [ ];
 in
 {
-  #"darwin-syncthing-cert.age".publicKeys = [ timmy ];
-  #"darwin-syncthing-key.age".publicKeys = [ timmy ];
-  #"felix-syncthing-cert.age".publicKeys = [ timmy ];
-  #"felix-syncthing-key.age".publicKeys = [ timmy ];
+  #"darwin-syncthing-cert.age".publicKeys = [ tingxu ];
+  #"darwin-syncthing-key.age".publicKeys = [ tingxu ];
+  #"felix-syncthing-cert.age".publicKeys = [ tingxu ];
+  #"felix-syncthing-key.age".publicKeys = [ tingxu ];
   "github-ssh-key.age".publicKeys = [ users ];
   "github-signing-key.age".publicKeys = [ users ];
-  #"syncthing-gui-password.age".publicKeys = [ timmy ];
+  #"syncthing-gui-password.age".publicKeys = [ tingxu ];
 }

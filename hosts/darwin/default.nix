@@ -1,6 +1,6 @@
 { agenix, config, pkgs, ... }:
 
-let user = "timmy"; in
+let user = "tingxu"; in
 
 {
 
