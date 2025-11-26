@@ -4,6 +4,15 @@ A comprehensive NixOS and macOS configuration with secrets management, supportin
 
 ## Overview
 
+This repository contains a flake-based configuration for both NixOS (x86_64 and aarch64) and macOS (Intel and Apple Silicon). It integrates:
+
+- **home-manager** for per-user configuration
+- **nix-darwin** for macOS system management
+- **disko** for declarative disk partitioning during NixOS installs
+- **agenix + age** (optionally YubiKey via age-plugin-yubikey) for secret management
+- **nix-homebrew** for managing Homebrew alongside Nix on macOS
+- **Convenience apps** to install, switch, manage keys, and more
+
 This configuration provides:
 - **Cross-platform support**: NixOS (Linux) and macOS (Darwin) configurations
 - **Secrets management**: Age-encrypted secrets with agenix
@@ -29,127 +38,165 @@ This configuration provides:
 │   ├── aarch64-linux/       # ARM64 Linux scripts
 │   └── x86_64-linux/        # x86_64 Linux scripts
 ├── overlays/                # Nix package overlays
-└── secrets/                 # Age-encrypted secrets
+├── secrets/                 # Age-encrypted secrets (git submodule)
+└── secrets.nix              # Secrets mapping and recipients
 ```
 
 ## Prerequisites
+
+### Requirements
+
+- **Nix with flakes enabled** (Nix 2.18+ recommended)
+  - Add to `/etc/nix/nix.conf` or `~/.config/nix/nix.conf`:
+    ```
+    experimental-features = nix-command flakes
+    ```
+- **Git** (with SSH access to your secrets repo)
+- **SSH client** and SSH key pair for secrets access
+- **Age** (for secrets management, provided via `nix develop`)
 
 ### For NixOS Installation
 - A computer with UEFI firmware
 - Internet connection
 - USB drive with NixOS installer
-- SSH key pair for secrets access
+- NixOS install ISO and a target disk you are willing to wipe when using disko
 
 ### For macOS Setup
 - macOS system with admin privileges
 - Xcode Command Line Tools installed
-- SSH key pair for secrets access
+- Nix installed (daemon mode recommended)
+- On Apple Silicon, Rosetta will be enabled automatically by nix-homebrew module
 
-### Required Tools
-- Git
-- SSH client
-- Age (for secrets management)
+### Optional but Recommended
+- **age-plugin-yubikey** (provided via `nix develop`)
+- A **YubiKey** if you plan to use age-plugin-yubikey for secrets
+
+## Quick Start
+
+### 1) Clone and Initialize Submodules
+
+You need access to the `secrets` submodule (default points to `git@github.com:TingRubato/secrets.git`). If you're using your own secrets repo, update `.gitmodules` first.
+
+```bash
+git clone git@github.com:TingRubato/nixos-config.git
+cd nixos-config
+git submodule update --init --recursive
+```
+
+Optionally enter the development shell (provides `age`, `age-plugin-yubikey`, etc.):
+
+```bash
+nix develop
+```
+
+You can also run directly from GitHub without cloning:
+
+```bash
+nix run github:TingRubato/nixos-config#apply
+```
+
+### 2) Customize for Your Machine(s)
+
+- **Edit the username** in `flake.nix`:
+  ```nix
+  user = "tingxu";  # change to your local username
+  ```
+- **Review and adjust host modules** under:
+  - macOS: `hosts/darwin`
+  - NixOS: `hosts/nixos`
+- **Review modules** in `modules/` and `overlays/` as needed
+- **Review secrets.nix** and ensure recipients are correct for your age keys
 
 ## Implementation Steps
 
-### Step 1: Clone the Configuration
+### Step 1: Set Up Secrets (agenix + age)
+
+If you don't already have an age key:
 
 ```bash
-git clone https://github.com/your-username/nixos-config.git
-cd nixos-config
+# In or out of `nix develop`:
+age-keygen -o ~/.config/age/keys.txt
 ```
 
-### Step 2: Set Up Secrets Repository
-
-1. Create a private GitHub repository for your secrets:
-   ```bash
-   # Create a new private repository on GitHub
-   # Name it something like "my-secrets" or "nixos-secrets"
-   ```
-
-2. Initialize the secrets repository:
-   ```bash
-   mkdir secrets
-   cd secrets
-   git init
-   git remote add origin git@github.com:your-username/your-secrets-repo.git
-   ```
-
-3. Create your first secret file:
-   ```bash
-   # Example: Create a WiFi password secret
-   echo "my-wifi-password" | age -e -i ~/.ssh/id_ed25519.pub > wifi-password.age
-   git add wifi-password.age
-   git commit -m "Add WiFi password secret"
-   git push -u origin main
-   ```
-
-### Step 3: Configure SSH Keys
-
-Ensure your SSH key is added to your GitHub account and loaded in your SSH agent:
+Convenience apps in this flake help with keys (see "Available Commands" below). Typical flow:
 
 ```bash
-# Add your SSH key to the agent
-ssh-add ~/.ssh/id_ed25519
+# Create keys (e.g., for this machine or YubiKey)
+nix run .#create-keys
 
-# Test GitHub access
-ssh -T git@github.com
+# Copy public keys where they need to be (e.g., into secrets repo or config)
+nix run .#copy-keys
+
+# Verify keys are set up correctly
+nix run .#check-keys
 ```
 
-### Step 4: Platform-Specific Setup
+To edit or rekey a secret with agenix:
 
-#### For NixOS Installation
+```bash
+# Edit a secret (opens your $EDITOR)
+agenix -e path/to/secret.age
+
+# Rekey secrets for updated recipients
+agenix -r
+```
+
+Recipients and secret paths are organized via `secrets.nix`. Ensure your public key(s) are listed appropriately.
+
+### Step 2: Platform-Specific Setup
+
+#### For macOS Setup (nix-darwin + home-manager + nix-homebrew)
+
+1. **Install Nix on macOS** (daemon mode). Follow the official instructions.
+
+2. **From this repo directory, apply the configuration**:
+   ```bash
+   # Apply default macOS configuration for your architecture
+   nix run .#apply
+   # or build and switch
+   nix run .#build-switch
+   ```
+
+Notes:
+- `nix-homebrew` will be enabled and configured with taps:
+  - homebrew-core, homebrew-cask, homebrew-bundle
+- On Apple Silicon, Rosetta is enabled automatically.
+- A rollback app is provided:
+  ```bash
+  nix run .#rollback
+  ```
+
+#### For NixOS Installation (installer + disko + home-manager)
+
+**Warning**: The disko-based install will ERASE the target disk. Review and edit the disko/host files under `hosts/nixos` before proceeding.
 
 1. **Boot from NixOS installer** and connect to internet
 
 2. **Clone your configuration**:
    ```bash
-   git clone https://github.com/your-username/nixos-config.git
+   git clone git@github.com:TingRubato/nixos-config.git
    cd nixos-config
+   git submodule update --init --recursive
    ```
 
-3. **Run the apply script**:
+3. **Install NixOS**:
    ```bash
-   nix run .#apply
-   ```
-   
-   This script will:
-   - Ask for your username, email, and GitHub details
-   - Configure the secrets repository URL
-   - Set up disk partitioning
-   - Replace placeholders in configuration files
-
-4. **Install NixOS**:
-   ```bash
+   # Run the installer (may prompt for the target device configuration)
    nix run .#install
+   
+   # Or, if you want to include secrets during install:
+   nix run .#install-with-secrets
    ```
 
-5. **Reboot and enjoy your new system!**
+4. **Reboot and enjoy your new system!**
 
-#### For macOS Setup
-
-1. **Install Nix** (if not already installed):
+   After logging in as your user:
    ```bash
-   sh <(curl -L https://nixos.org/nix/install)
-   ```
-
-2. **Clone your configuration**:
-   ```bash
-   git clone https://github.com/your-username/nixos-config.git
-   cd nixos-config
-   ```
-
-3. **Run the apply script**:
-   ```bash
-   nix run .#apply
-   ```
-
-4. **Build and switch to the configuration**:
-   ```bash
+   # Build and switch to the latest configuration
    nix run .#build-switch
    ```
 
-### Step 5: Post-Installation Configuration
+### Step 3: Post-Installation Configuration
 
 #### Configure Secrets
 
@@ -173,8 +220,8 @@ ssh -T git@github.com
    ```nix
    {
      "wifi-password.age".path = "/etc/wifi-password";
-     "id_ed25519.age".path = "/home/timmy/.ssh/id_ed25519";
-     "api-key.age".path = "/home/timmy/.config/api-key";
+     "id_ed25519.age".path = "/home/tingxu/.ssh/id_ed25519";
+     "api-key.age".path = "/home/tingxu/.config/api-key";
    }
    ```
 
@@ -201,30 +248,27 @@ ssh -T git@github.com
    - Editor settings
    - Desktop environment preferences
 
-### Step 6: Regular Maintenance
+## Daily Usage
 
-#### Update Configuration
+- **Update inputs and switch**:
+  ```bash
+  # Update flake inputs to latest
+  nix flake update
+  
+  # Apply updated configuration
+  nix run .#build-switch
+  # or on macOS, you can also:
+  nix run .#apply
+  ```
 
-```bash
-# Update flake inputs
-nix flake update
-
-# Rebuild system
-nix run .#build-switch
-```
-
-#### Manage Secrets
-
-```bash
-# Add new secret
-echo "new-secret" | age -e -i ~/.ssh/id_ed25519.pub > new-secret.age
-
-# Edit existing secret
-age -d -i ~/.ssh/id_ed25519 new-secret.age | $EDITOR
-age -e -i ~/.ssh/id_ed25519.pub > new-secret.age
-```
+- **Run any app by name** (see below). From GitHub directly:
+  ```bash
+  nix run github:TingRubato/nixos-config#<app>
+  ```
 
 ## Available Commands
+
+The flake exposes convenience apps that adapt to your current system:
 
 ### NixOS Commands
 - `nix run .#apply` - Configure system with user details
@@ -232,6 +276,8 @@ age -e -i ~/.ssh/id_ed25519.pub > new-secret.age
 - `nix run .#copy-keys` - Copy SSH keys to system
 - `nix run .#create-keys` - Generate new SSH keys
 - `nix run .#check-keys` - Verify SSH key configuration
+- `nix run .#install` - Install NixOS (erases target disk)
+- `nix run .#install-with-secrets` - Install NixOS with secrets
 
 ### macOS Commands
 - `nix run .#apply` - Configure system with user details
@@ -241,6 +287,11 @@ age -e -i ~/.ssh/id_ed25519.pub > new-secret.age
 - `nix run .#copy-keys` - Copy SSH keys to system
 - `nix run .#create-keys` - Generate new SSH keys
 - `nix run .#check-keys` - Verify SSH key configuration
+
+List the flake outputs (apps, packages, etc.):
+```bash
+nix flake show
+```
 
 ## Configuration Features
 
@@ -265,21 +316,43 @@ age -e -i ~/.ssh/id_ed25519.pub > new-secret.age
 - **Git**: Comprehensive Git setup
 - **Secrets**: Age-encrypted secrets with agenix
 
+## Repository Layout
+
+- `flake.nix`: main flake; inputs, apps, and system definitions
+- `hosts/darwin`: macOS host modules
+- `hosts/nixos`: NixOS host modules (including disko definitions)
+- `modules/`: shared modules (and NixOS home-manager module import)
+- `overlays/`: nixpkgs overlays
+- `secrets.nix`: agenix recipients and secret mapping
+- `secrets/`: git submodule pointing to your encrypted secrets repository
+
+## Customization Tips
+
+- Change the `user` in the flake to match your local username on both macOS and NixOS.
+- Add per-host overrides or hardware-specific configs under `hosts/<platform>/`.
+- Put personal overlays in `overlays/` and import them in your modules as needed.
+- Keep secrets encrypted with agenix and commit only the `.age` files (not plaintext).
+- Consider pinning inputs to specific revisions for reproducibility (`nix flake lock`).
+
 ## Troubleshooting
 
 ### Common Issues
 
-1. **SSH Key Not Found**:
+1. **"Flakes are disabled"**:
+   - Set `experimental-features = nix-command flakes` in `nix.conf`.
+
+2. **SSH Key Not Found**:
    ```bash
    ssh-add ~/.ssh/id_ed25519
    ```
 
-2. **Secrets Repository Access Denied**:
+3. **Secrets Repository Access Denied**:
    - Verify SSH key is added to GitHub
    - Check repository permissions
    - Ensure SSH agent is running
+   - Ensure you have SSH read access to the `secrets` repo or update `.gitmodules` to your fork
 
-3. **Build Failures**:
+4. **Build Failures**:
    ```bash
    # Clean build cache
    nix-collect-garbage -d
@@ -288,10 +361,15 @@ age -e -i ~/.ssh/id_ed25519.pub > new-secret.age
    nix run .#build-switch --verbose
    ```
 
-4. **Disk Partitioning Issues**:
+5. **Disk Partitioning Issues**:
    - Verify disk selection in `modules/nixos/disk-config.nix`
    - Check disk space requirements
    - Ensure UEFI compatibility
+
+6. **age key not found**:
+   - Ensure your private key exists at `~/.config/age/keys.txt` or your YubiKey is connected
+
+7. **On macOS, first apply may prompt** for privileged actions (daemon setup, Rosetta enablement on Apple Silicon, etc.)
 
 ### Getting Help
 
@@ -310,6 +388,8 @@ age -e -i ~/.ssh/id_ed25519.pub > new-secret.age
 ## License
 
 This configuration is provided as-is for educational and personal use. Please review and modify according to your needs and security requirements.
+
+If forking, add your own license as appropriate.
 
 ## Security Notes
 
