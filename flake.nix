@@ -97,12 +97,12 @@
               nix-homebrew = {
                 inherit user;
                 enable = true;
-                taps = {
-                  "homebrew/homebrew-core" = homebrew-core;
-                  "homebrew/homebrew-cask" = homebrew-cask;
-                  "homebrew/homebrew-bundle" = homebrew-bundle;
-                };
-                enableRosetta = true;
+                # With mutableTaps=true, let Homebrew manage taps locally.
+                # Avoid pinning taps into the Nix store to prevent conflicts
+                # with existing on-disk Git checkouts under /opt/homebrew/Library/Taps.
+                taps = {};
+                # Disable Intel Homebrew setup unless explicitly needed.
+                enableRosetta = false;
                 # Allow Homebrew taps to be managed mutably on-disk so the
                 # nix-darwin homebrew module can add third-party taps (e.g., terrastruct/tap)
                 # without conflicting with a read-only symlink to the Nix store.

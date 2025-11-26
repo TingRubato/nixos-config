@@ -59,7 +59,7 @@ with pkgs; [
   # Python packages
   python3
   virtualenv
-
+  pkgs.awscli2
   # Nix development and debugging tools
   nix-index
   nix-tree
