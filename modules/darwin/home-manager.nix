@@ -64,6 +64,37 @@ in
         ];
 
         stateVersion = "23.11";
+
+        # Install npm global packages (intentionally impure - these tools update frequently)
+        # Note: This runs on every home-manager activation. Packages are only installed if missing.
+        activation.installNpmPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''
+          PATH="/opt/homebrew/bin:$PATH"
+          if command -v npm >/dev/null 2>&1; then
+            echo "Checking npm global packages..."
+
+            install_if_missing() {
+              local pkg="$1"
+              if ! npm list -g --depth=0 "$pkg" >/dev/null 2>&1; then
+                echo "Installing $pkg..."
+                if npm install -g "$pkg"; then
+                  echo "✓ $pkg installed successfully"
+                else
+                  echo "✗ Failed to install $pkg (non-fatal)" >&2
+                fi
+              else
+                echo "✓ $pkg already installed"
+              fi
+            }
+
+            # AI coding assistants (installed via npm for latest versions)
+            install_if_missing "@anthropic-ai/claude-code"
+            install_if_missing "@google/gemini-cli"
+            install_if_missing "@openai/codex"
+          else
+            echo "Warning: npm not found in PATH, skipping npm package installation" >&2
+            echo "Install Node.js via Homebrew: brew install node" >&2
+          fi
+        '';
       };
 
       manual.manpages.enable = false;

@@ -15,7 +15,6 @@ shared-packages ++ [
   home-manager
 
   # Media and design tools
-  vlc
   fontconfig
   font-manager
 

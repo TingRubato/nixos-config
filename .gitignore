@@ -4,8 +4,16 @@ flake.lock
 *.swp
 *.backup
 
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
 .ssh/id_ed25519
 
 .ssh/id_ed25519_agenix
 
 .ssh/proxmox_key
+
+# Temporary analysis and debugging files
+GIT_CONFLICT_ANALYSIS.md
+*.changeset

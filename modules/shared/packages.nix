@@ -41,7 +41,6 @@ with pkgs; [
   # nodePackages.npm # globally install npm
   # nodePackages.prettier
   # nodejs
-  pkgs.claude-code
 
   # Text and terminal utilities
   htop
@@ -59,7 +58,10 @@ with pkgs; [
   # Python packages
   python3
   virtualenv
-  pkgs.awscli2
+
+  # Cloud CLI tools
+  awscli2
+
   # Nix development and debugging tools
   nix-index
   nix-tree
